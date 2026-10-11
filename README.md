@@ -1,5 +1,7 @@
 ﻿# Recall
 
+![](https://github.com/garan1610/Quiz-Maker/Nhat-Sao-Demo.gif)
+
 A browser-based question-bank importer and study app. No AI API key or backend database is needed.
 
 ## Run locally
