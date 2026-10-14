@@ -1,48 +1,13 @@
 "use client";
 import { useLanguage } from "./language";
 import { useState } from "react";
-import { createAttempt, compactBank, needsReview, parseBank, type Attempt, type Question, type QuizBank, type Settings, type SavedSession } from "@/lib/quiz";
-import { AnswerReview, downloadJson, Icon, Modal } from "./ui";
-function QuestionEditor({ question, onSave, onClose }: {
-    question: Question;
-    onSave: (question: Question) => void;
-    onClose: () => void;
-}) {
-    const { t } = useLanguage();
-    const [draft, setDraft] = useState<Question>(() => structuredClone(question));
-    const [resolved, setResolved] = useState(false);
-    const [error, setError] = useState("");
-    function save() {
-        const result = parseBank(JSON.stringify(compactBank({ title: "Review", questions: [{ ...draft, reviewIssues: resolved ? [] : draft.reviewIssues }] })));
-        if (!result.bank) {
-            setError(result.errors.join(" "));
-            return;
-        }
-        if (resolved && !draft.correctChoiceIds.length) {
-            setError("Choose the correct answer before marking this question as reviewed.");
-            return;
-        }
-        const validated = result.bank.questions[0];
-        onSave({ ...draft, type: validated.type, answerShuffleSafe: validated.answerShuffleSafe, reviewIssues: validated.reviewIssues });
-    }
-    return <Modal title={t("Edit question {number}", { number: question.id })} description={t("Check your changes against the original document.")} onClose={onClose} wide>
-    <form className="modal-content editor-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
-      <label className="field-label">{t("Question")}<textarea rows={4} value={draft.text} onChange={(e) => setDraft({ ...draft, text: e.target.value })}/></label>
-      <div className="form-grid"><label className="field-label">{t("Section")}<input value={draft.section} onChange={(e) => setDraft({ ...draft, section: e.target.value })}/></label><label className="field-label">{t("Answer type")}<select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as Question["type"], correctChoiceIds: e.target.value === "single_choice" ? draft.correctChoiceIds.slice(0, 1) : draft.correctChoiceIds })}><option value="single_choice">{t("Single choice")}</option><option value="multiple_choice">{t("Multiple choices")}</option></select></label></div>
-      <fieldset className="editor-choices"><legend>{t("Choices ")}<span>{t(draft.type === "multiple_choice" ? "Select the correct answers" : "Select the correct answer")}</span></legend>{draft.choices.map((choice, index) => <div className="editor-choice" key={choice.id}><input type={draft.type === "single_choice" ? "radio" : "checkbox"} name="correct-choice" aria-label={t("Mark {label} as correct", { label: choice.sourceLabel })} checked={draft.correctChoiceIds.includes(choice.id)} onChange={() => setDraft({ ...draft, correctChoiceIds: draft.type === "single_choice" ? [choice.id] : draft.correctChoiceIds.includes(choice.id) ? draft.correctChoiceIds.filter((id) => id !== choice.id) : [...draft.correctChoiceIds, choice.id] })}/><span className="choice-letter">{choice.sourceLabel}</span><textarea aria-label={t("Choice {label} text", { label: choice.sourceLabel })} rows={2} value={choice.text} onChange={(e) => setDraft({ ...draft, choices: draft.choices.map((c, i) => i === index ? { ...c, text: e.target.value } : c) })}/></div>)}</fieldset>
-      <label className="field-label">{t("Explanation")}<textarea rows={5} value={draft.explanation} onChange={(e) => setDraft({ ...draft, explanation: e.target.value })}/></label>
-      <label className="field-label">{t("Source page")}<input type="number" min={1} step={1} value={draft.source_page ?? ""} onChange={(e) => setDraft({ ...draft, source_page: e.target.value === "" ? undefined : Number(e.target.value) })}/></label>
-      <label className="check-label"><input type="checkbox" checked={draft.answerShuffleSafe} onChange={(e) => setDraft({ ...draft, answerShuffleSafe: e.target.checked })}/>{t("These choices can be shuffled without changing their meaning.")}</label>
-      <p className="field-help">{t("Keep this off for \u201Call of the above\u201D, references to other choices, or any order-dependent wording.")}</p>
-      {needsReview(question) && <div className="notice amber"><Icon name="flag"/><div><strong>{t("Flagged during import")}</strong><ul>{question.reviewIssues.map((issue, index) => <li key={index}>{t(issue)}</li>)}</ul><label className="check-label"><input type="checkbox" checked={resolved} onChange={(e) => setResolved(e.target.checked)}/>{t("I checked this against the source and resolved these issues.")}</label></div></div>}
-      {error && <div className="error-box" role="alert">{t(error)}</div>}
-      <div className="button-row end"><button type="button" className="button secondary" onClick={onClose}>{t("Cancel")}</button><button className="button primary" type="submit">{t("Save question ")}<Icon name="check" size={17}/></button></div>
-    </form>
-  </Modal>;
-}
-export function ProjectView({ bank, onUpdate, onStart, onBack, savedSettings, onSettingsChange, progress, onResume, sourceUrl }: {
+import { createAttempt, compactBank, needsReview, type Attempt, type Question, type QuizBank, type Settings, type SavedSession } from "@/lib/quiz";
+import { AnswerReview, downloadJson, Icon } from "./ui";
+import { QuestionEditor } from "./question-editor";
+export function ProjectView({ bank, onUpdate, onCustomize, onStart, onBack, savedSettings, onSettingsChange, progress, onResume, sourceUrl }: {
     bank: QuizBank;
     onUpdate: (bank: QuizBank) => void;
+    onCustomize: () => void;
     onStart: (attempt: Attempt) => void;
     onBack: () => void;
     savedSettings?: Settings;
@@ -53,8 +18,8 @@ export function ProjectView({ bank, onUpdate, onStart, onBack, savedSettings, on
 }) {
     const { t } = useLanguage();
     const sections = [...new Set(bank.questions.map((q) => q.section))];
-    const [settings, updateSettings] = useState<Settings>(savedSettings ?? { sections, count: bank.questions.length, shuffleQuestions: true, shuffleAnswers: false, mode: "practice" });
-    function setSettings(next: Settings) { updateSettings(next); onSettingsChange(next); }
+    const settings: Settings = savedSettings ?? { sections, count: bank.questions.length, shuffleQuestions: true, shuffleAnswers: false, mode: "practice" };
+    function setSettings(next: Settings) { onSettingsChange(next); }
     const [tab, setTab] = useState<"setup" | "questions">("setup");
     const [query, setQuery] = useState("");
     const [onlyFlagged, setOnlyFlagged] = useState(false);
@@ -78,7 +43,7 @@ export function ProjectView({ bank, onUpdate, onStart, onBack, savedSettings, on
     }
     return <div className="page-content project-page">
     <button className="text-button back-link" onClick={onBack}><Icon name="back" size={16}/>{t(" All projects")}</button>
-    <div className="page-heading"><div><span className="eyebrow">{t("YOUR QUESTION BANK")}</span><h1>{bank.title}</h1><p className="project-subline"><Icon name="file" size={16}/>{t("Imported question bank")}<span>·</span>{bank.questions.length}{t(" questions")}<span>·</span>{sections.length}{t(" sections")}</p></div><button className="button secondary" onClick={() => downloadJson(compactBank(bank), bank.title)}><Icon name="download" size={17}/>{t(" Export JSON")}</button></div>
+    <div className="page-heading"><div><span className="eyebrow">{t("YOUR QUESTION BANK")}</span><div className="project-title-row"><h1>{bank.title}</h1><button type="button" className="icon-button customize-project" onClick={onCustomize} aria-label={t("Customize project")} title={t("Customize project")}><Icon name="edit" size={19}/></button></div><p className="project-subline"><Icon name="file" size={16}/>{t("Imported question bank")}<span>·</span>{bank.questions.length}{t(" questions")}<span>·</span>{sections.length}{t(" sections")}</p></div><button className="button secondary" onClick={() => downloadJson(compactBank(bank), bank.title)}><Icon name="download" size={17}/>{t(" Export JSON")}</button></div>
     <p className="project-backup-note"><Icon name="download" size={14}/>{t("This quiz may be lost if browser data is cleared. Export JSON to keep a copy.")}</p>
     {sourceUrl && <a className="source-download text-button" href={encodeURI(sourceUrl)} download><Icon name="download" size={16}/>{t("Source Word document")}</a>}
     {progress && <div className="resume-banner notice"><Icon name="clock"/><div><strong>{t("Your previous session is saved.")}</strong><p>{t("Starting a new session replaces the saved attempt for this project.")}</p></div><button className="button primary small" onClick={onResume}>{progress.finished ? t("Review saved results") : t("Resume session")}<Icon name="arrow" size={16}/></button></div>}
@@ -110,9 +75,12 @@ export function ProjectView({ bank, onUpdate, onStart, onBack, savedSettings, on
       {!displayed.length && <div className="empty-search"><Icon name="search" size={26}/><h3>{t("No matching questions")}</h3><p>{t("Try a different search or turn off the review filter.")}</p></div>}
     </section>}
     {editing && <QuestionEditor question={editing} onClose={() => setEditing(null)} onSave={(question) => {
-                onUpdate({ ...bank, questions: bank.questions.map((q) => q.id === question.id ? question : q) });
-                if (!sections.includes(question.section))
-                    setSettings({ ...settings, sections: [...settings.sections, question.section] });
+                const questions = bank.questions.map((q) => q.id === question.id ? question : q);
+                onUpdate({ ...bank, questions });
+                const nextSections = [...new Set(questions.map((q) => q.section))];
+                const selectedSections = settings.sections.filter((section) => nextSections.includes(section));
+                if (!sections.includes(question.section)) selectedSections.push(question.section);
+                setSettings({ ...settings, sections: selectedSections });
                 setEditing(null);
             }}/>} 
   </div>;

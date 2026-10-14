@@ -6,6 +6,7 @@ import { LanguageProvider, useLanguage } from "./language";
 import { needsReview, type Attempt, type Project, type QuizBank, type SavedSession } from "@/lib/quiz";
 import { Importer } from "./importer";
 import { ProjectView } from "./project-view";
+import { ProjectCustomizer } from "./project-customizer";
 import { Results, StudySession } from "./study-session";
 import { Icon, Modal } from "./ui";
 export default function QuizApp() { return <LanguageProvider><WorkspaceApp /></LanguageProvider>; }
@@ -60,6 +61,7 @@ function WorkspaceApp() {
     const [search, setSearch] = useState("");
     const [leaveDialog, setLeaveDialog] = useState(false);
     const [deleting, setDeleting] = useState<Project | null>(null);
+    const [customizing, setCustomizing] = useState<Project | null>(null);
     const project = projects.find((p) => p.id === activeId);
     const attempt = project?.progress?.attempt;
     const existingPublic = projects.find((p) => p.publicId === publicQuiz.id);
@@ -144,7 +146,7 @@ function WorkspaceApp() {
           <div className="library-actions"><button className="button primary" onClick={() => setImportTab("upload")}><Icon name="plus" size={18}/>{t(" Import a quiz")}</button><button className="button secondary" onClick={() => setImportTab("prompt")}><Icon name="spark" size={17}/>{t(" Get AI prompt")}</button></div>
           <section className="how-it-works"><div className="how-title"><h2>{t("How to import")}</h2></div><div className="how-step"><span className="how-icon lilac"><Icon name="copy"/></span><h3><small>01</small>{t(" Copy the prompt")}</h3><p>{t("Take our prompt and your document to your favorite AI chatbot.")}</p></div><div className="how-step"><span className="how-icon peach"><Icon name="upload"/></span><h3><small>02</small>{t(" Import JSON")}</h3><p>{t("Import its JSON file. Check the questions and answer key.")}</p></div><div className="how-step"><span className="how-icon mint"><Icon name="play"/></span><h3><small>03</small>{t(" Study")}</h3><p>{t("Shuffle, practice, and learn from the questions you missed.")}</p></div></section>
           <section className="projects-section"><div className="projects-heading"><div><h2>{t("My projects ")}<span>{projects.length}</span></h2></div>{projects.length > 0 && <label className="search-field"><Icon name="search" size={17}/><input aria-label={t("Search projects")} placeholder={t("Find a project\u2026")} value={search} onChange={(e) => setSearch(e.target.value)}/></label>}</div>
-            <div className="project-grid">{visible.map((p, index) => <article key={p.id} className="project-card"><button className="project-card-main" onClick={() => openProject(p.id)}><div className="project-card-top"><span className={`project-icon tone-${index % 3}`}><Icon name="book" size={24}/></span><span className="pill">{p.bank.questions.length}{t(" questions")}</span></div><h3>{p.bank.title}</h3><p>{p.publicId === publicQuiz.id ? publicQuiz.sourceName : t("Imported question bank")}</p><div className="project-card-bottom"><span>{new Set(p.bank.questions.map((q) => q.section)).size}{t(" sections")}</span>{p.bank.questions.some(needsReview) ? <span className="flag-count">{t("Needs review")}</span> : <span className="card-open">{t("Study ")}<Icon name="arrow" size={17}/></span>}</div></button><button className="project-delete icon-button" aria-label={t("Delete {title}", { title: p.bank.title })} onClick={() => setDeleting(p)}><Icon name="trash" size={16}/></button></article>)}
+            <div className="project-grid">{visible.map((p, index) => <article key={p.id} className="project-card"><button className="project-card-main" onClick={() => openProject(p.id)}><div className="project-card-top"><span className={`project-icon tone-${index % 3}`}><Icon name="book" size={24}/></span><span className="pill">{p.bank.questions.length}{t(" questions")}</span></div><h3>{p.bank.title}</h3><p>{p.publicId === publicQuiz.id ? publicQuiz.sourceName : t("Imported question bank")}</p><div className="project-card-bottom"><span>{new Set(p.bank.questions.map((q) => q.section)).size}{t(" sections")}</span>{p.bank.questions.some(needsReview) ? <span className="flag-count">{t("Needs review")}</span> : <span className="card-open">{t("Study ")}<Icon name="arrow" size={17}/></span>}</div></button><div className="project-card-actions"><button type="button" className="icon-button" aria-label={t("Customize {title}", { title: p.bank.title })} title={t("Customize project")} onClick={() => setCustomizing(p)}><Icon name="edit" size={16}/></button><button type="button" className="icon-button" aria-label={t("Delete {title}", { title: p.bank.title })} onClick={() => setDeleting(p)}><Icon name="trash" size={16}/></button></div></article>)}
               {!search && <button className="new-project-card" onClick={() => setImportTab("upload")}><span className="new-project-icon"><Icon name="plus" size={26}/></span><h3>{projects.length ? t("Add another quiz") : t("Import a quiz")}</h3><span className="text-button">{t("Import JSON ")}<Icon name="arrow" size={16}/></span></button>}
 
             </div>{search && !visible.length && <div className="empty-search"><Icon name="search" size={25}/><h3>{t("No projects found")}</h3><p>{t("Try another title.")}</p></div>}
@@ -153,12 +155,26 @@ function WorkspaceApp() {
             <article className="sample-card public-card"><div className="sample-card-top"><span className="pill">{t("PUBLIC QUESTION BANK")}</span><Icon name="book" size={28}/></div><h3>{publicQuiz.title}</h3><p>{t("Practice chapters 1\u20134 with the supplied questions, answers, and explanations.")}</p><div className="public-source"><Icon name="file" size={16}/><a href={encodeURI(publicQuiz.sourceUrl)} download>{t("Source Word document")}: {publicQuiz.sourceName}</a></div><div className="sample-card-footer"><span>{publicQuiz.questionCount} {t("questions")} · 4 {t("sections")}</span><div className="button-row"><a className="button secondary small" href={publicQuiz.jsonUrl} download><Icon name="download" size={15}/>{t("Download JSON")}</a><button className="button primary" disabled={loadingPublic} onClick={() => void openPublic()}>{t(loadingPublic ? "Loading quiz…" : existingPublic ? "Open my copy" : "Open public quiz")}<Icon name="arrow" size={16}/></button></div></div></article>
           </section>
         </div>}
-        {view === "project" && project && <ProjectView key={project.id} bank={project.bank} onBack={goLibrary} onUpdate={(bank) => setProjects((current) => current.map((p) => p.id === project.id ? { ...p, bank, progress: undefined } : p))} onStart={start} savedSettings={project.settings} onSettingsChange={(settings) => setProjects((items) => items.map((p) => p.id === project.id ? { ...p, settings } : p))} progress={project.progress} onResume={() => setView(project.progress?.finished ? "results" : "study")} sourceUrl={project.publicId === publicQuiz.id ? publicQuiz.sourceUrl : undefined}/>}
+        {view === "project" && project && <ProjectView key={project.id} bank={project.bank} onBack={goLibrary} onCustomize={() => setCustomizing(project)} onUpdate={(bank) => setProjects((current) => current.map((p) => p.id === project.id ? { ...p, bank, progress: undefined } : p))} onStart={start} savedSettings={project.settings} onSettingsChange={(settings) => setProjects((items) => items.map((p) => p.id === project.id ? { ...p, settings } : p))} progress={project.progress} onResume={() => setView(project.progress?.finished ? "results" : "study")} sourceUrl={project.publicId === publicQuiz.id ? publicQuiz.sourceUrl : undefined}/>}
         {view === "study" && project && attempt && <StudySession key={sessionId} progress={project.progress!} onProgress={saveProgress} bank={project.bank} onExit={() => setLeaveDialog(true)} onFinish={finish}/>} 
         {view === "results" && project && attempt && <Results key={sessionId} attempt={attempt} bank={project.bank} onBack={() => { setView("project"); window.scrollTo({ top: 0, behavior: "instant" }); }} onRetry={start}/>}
       </main>
     </div>
     {importTab && <Importer initialTab={importTab} onClose={() => setImportTab(null)} onImport={addProject}/>}
+    {customizing && <ProjectCustomizer bank={customizing.bank} hasProgress={!!customizing.progress} onClose={() => setCustomizing(null)} onSave={(bank, questionsChanged) => {
+      setProjects((items) => items.map((p) => {
+        if (p.id !== customizing.id) return p;
+        if (!questionsChanged) return { ...p, bank };
+        const sections = [...new Set(bank.questions.map((question) => question.section))];
+        const oldSections = new Set(p.bank.questions.map((question) => question.section));
+        const settings = p.settings ? { ...p.settings,
+          count: Math.min(p.settings.count, bank.questions.length),
+          sections: sections.filter((section) => p.settings!.sections.includes(section) || !oldSections.has(section)),
+        } : undefined;
+        return { ...p, bank, settings, progress: undefined };
+      }));
+      setCustomizing(null);
+    }}/>}
     {leaveDialog && <Modal title={t("Leave this session?")} description={t("Your progress is saved. You can resume this session from your project.")} onClose={() => setLeaveDialog(false)}><div className="modal-content button-row end"><button className="button secondary" onClick={() => setLeaveDialog(false)}>{t("Keep studying")}</button><button className="button primary" onClick={() => { setLeaveDialog(false); setView("project"); }}>{t("Save & leave")}</button></div></Modal>}
     {deleting && <Modal title={t("Remove this project?")} description={t("“{title}” will be removed from this browser. Your original JSON file won’t be changed.", { title: deleting.bank.title })} onClose={() => setDeleting(null)}><div className="modal-content button-row end"><button className="button secondary" onClick={() => setDeleting(null)}>{t("Cancel")}</button><button className="button danger" onClick={() => { setProjects((current) => current.filter((p) => p.id !== deleting.id)); setDeleting(null); }}>{t("Remove project")}</button></div></Modal>}
   </div>;

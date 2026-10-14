@@ -129,7 +129,8 @@ main { flex: 1; }
 .project-card p { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
 .project-card-bottom { border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-top: 24px; padding-top: 17px; font-size: 11px; color: var(--muted); }
 .card-open { display: flex; align-items: center; gap: 7px; color: var(--purple); font-weight: 600; }
-.project-delete { position: absolute; top: 15px; right: 12px; }
+.project-card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--paper); }
+.project-card:has(.project-card-actions) .project-card-top { padding-top: 20px; }
 .session-reminder { display: flex; align-items: flex-start; gap: 9px; margin: 24px 0 0; color: #97929e; font-size: 10px; line-height: 1.8; }
 .session-reminder>svg { margin-top: 3px; }
 .app-footer { border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 46px; padding: 19px 0; font-size: 10px; color: #a09ba7; }
@@ -194,6 +195,39 @@ input.switch { appearance: none; width: 35px; height: 21px; border-radius: 20px;
 .review-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 24px; }
 .project-backup-note { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 16px; font-size: 11px; line-height: 1.6; color: var(--muted); }
 .project-backup-note svg { margin-top: 2px; }
+.project-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.project-title-row h1 { min-width: 0; }
+.customize-project { background: var(--lavender); color: var(--purple); }
+.project-customizer { display: grid; gap: 22px; }
+.customizer-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.customizer-heading h3 { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.customizer-heading .search-field { width: min(100%, 300px); }
+.customizer-questions { display: grid; gap: 12px; max-height: 48vh; max-height: 48dvh; overflow-y: auto; overscroll-behavior: contain; padding: 4px; margin: -4px; }
+.customizer-question { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 15px; }
+.customizer-question-heading { display: flex; align-items: flex-start; gap: 10px; }
+.customizer-question-text { flex: 1; min-width: 0; }
+.customizer-question-text small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 5px; overflow-wrap: anywhere; }
+.customizer-question-text p { font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.customizer-question-actions { display: flex; flex-shrink: 0; gap: 3px; }
+.customizer-answer-preview { margin-top: 12px; }
+.customizer-answer-preview summary { cursor: pointer; font-size: 11px; color: var(--purple); padding: 4px 0; }
+.customizer-delete-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; margin-top: 12px; border-radius: 7px; background: #fff1f1; }
+.customizer-delete-confirm > span { margin-right: auto; font-size: 12px; color: var(--red); }
+.customizer-footer { flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.customizer-footer p { flex: 1 1 180px; }
+.customizer-footer .button-row { margin: 0; }
+@media (max-width: 450px) {
+  .customizer-question { padding: 12px; }
+  .customizer-question-heading { display: grid; grid-template-columns: 26px minmax(0, 1fr); }
+  .customizer-question-actions { grid-column: 2; justify-self: end; }
+  .customizer-heading .search-field { width: 100%; }
+  .customizer-footer .button-row { width: 100%; justify-content: flex-end; }
+}
+.editor-choice textarea { flex: 1; min-width: 0; }
+.remove-choice:hover:not(:disabled) { background: #fff1f1; color: var(--red); }
+.editor-choice-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.editor-choice-actions > span { color: var(--muted); font-size: 11px; }
+.editor-form .choice-edit-note { margin: 0; }
 .import-error-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
 .review-actions .field-help { flex-basis: 100%; margin: 0; }
 .question-actions { flex-wrap: wrap; gap: 8px; }

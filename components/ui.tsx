@@ -1,6 +1,6 @@
 "use client";
 import { useLanguage } from "./language";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import type { Question } from "@/lib/quiz";
 export type IconName = "grid" | "plus" | "arrow" | "back" | "upload" | "file" | "spark" | "check" | "close" | "shuffle" | "book" | "copy" | "download" | "clock" | "play" | "edit" | "trash" | "search" | "chevron" | "flag" | "refresh" | "shield" | "target" | "layers";
 const paths: Record<IconName, ReactNode> = {
@@ -38,6 +38,7 @@ export function Modal({ title, description, children, onClose, wide = false }: {
 }) {
     const { t } = useLanguage();
     const ref = useRef<HTMLDialogElement>(null);
+    const titleId = useId();
     useEffect(() => {
         const dialog = ref.current;
         const previous = document.activeElement as HTMLElement | null;
@@ -46,12 +47,12 @@ export function Modal({ title, description, children, onClose, wide = false }: {
         document.body.style.overflow = "hidden";
         return () => { dialog?.close(); document.body.style.overflow = overflow; previous?.focus(); };
     }, []);
-    return <dialog ref={ref} className={`modal ${wide ? "modal-wide" : ""}`} aria-labelledby="modal-title" onCancel={onClose} onClick={(e) => { if (e.target === e.currentTarget) {
+    return <dialog ref={ref} className={`modal ${wide ? "modal-wide" : ""}`} aria-labelledby={titleId} onCancel={onClose} onClick={(e) => { if (e.target === e.currentTarget) {
         const box = e.currentTarget.getBoundingClientRect();
         if (e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom)
             onClose();
     } }}>
-    <header className="modal-header"><div><h2 id="modal-title">{title}</h2>{description && <p>{description}</p>}</div><button type="button" className="icon-button" aria-label={t("Close dialog")} onClick={onClose}><Icon name="close"/></button></header>
+    <header className="modal-header"><div><h2 id={titleId}>{title}</h2>{description && <p>{description}</p>}</div><button type="button" className="icon-button" aria-label={t("Close dialog")} onClick={onClose}><Icon name="close"/></button></header>
     {children}
   </dialog>;
 }
